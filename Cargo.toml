@@ -1,0 +1,22 @@
+[package]
+name = "concept2-influxdb"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json", "rustls-tls-webpki-roots"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+log = "0.4"
+env_logger = "0.11"
+thiserror = "1"
+dotenv = "0.15"
+influxdb2 = { version = "0.5", default-features = false, features = ["rustls"] }
+futures = "0.3"
+
+[[bin]]
+name = "concept2-influxdb"
+path = "src/main.rs"

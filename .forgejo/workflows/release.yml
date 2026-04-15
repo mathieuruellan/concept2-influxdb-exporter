@@ -1,0 +1,47 @@
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest # sudo is not installed
+    steps:
+      - name: Install Docker CLI
+        run: |
+          curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.4.0.tgz -o docker.tgz
+          tar xzf docker.tgz
+          mv docker/* /usr/local/bin/
+          rm -rf docker docker.tgz
+
+      - uses: actions/checkout@v4
+        with :
+          fetch-depth: 0
+
+      #- uses: docker/setup-buildx-action@v3
+
+      - name: Set version
+        run: echo "VERSION=${{ github.ref_name }}" | tee $GITHUB_ENV
+
+      - name: Login to Forgejo registry
+        run: |
+          echo ${{ secrets.MY_FORGEJO_TOKEN }} | docker login forgejo.breizhbiniou.fr -u ${{ secrets.MY_FORGEJO_USERNAME }} --password-stdin
+
+      - name: Build and push image
+        env:
+          BUILDKIT_PROGRESS: "plain"
+        run: |
+          docker build -t forgejo.breizhbiniou.fr/mathieu/concept2-influxdb:${{ env.VERSION }} .
+          docker push forgejo.breizhbiniou.fr/mathieu/concept2-influxdb:${{ env.VERSION }}
+
+      - name: Create Forgejo Release with changelog
+        uses: actions/forgejo-release@v2
+        with:
+          direction: upload
+          url: https://forgejo.breizhbiniou.fr
+          repo: mathieu/concept2_influxdb
+          tag: ${{ env.VERSION }}
+          release_notes_assistant: true
+          prerelease: false
+          token: ${{ secrets.MY_FORGEJO_TOKEN }}

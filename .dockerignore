@@ -1,0 +1,8 @@
+# Ignore everything except what's needed for the build
+*
+
+# Allow specific files and directories
+!Dockerfile
+!Cargo.toml
+!Cargo.lock
+!src/

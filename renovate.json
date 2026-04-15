@@ -1,0 +1,5 @@
+{
+  "extends": [
+    "local>mathieu/renovate:default.json5"
+  ]
+}

@@ -1,0 +1,20 @@
+services:
+
+  concept2-influxdb:
+    build: .
+    restart: unless-stopped
+    environment:
+      CONCEPT2_API_TOKEN: ${CONCEPT2_API_TOKEN}
+      CONCEPT2_POLL_INTERVAL_SECONDS: ${CONCEPT2_POLL_INTERVAL_SECONDS:-3600}
+      CONCEPT2_STATE_FILE: /data/state.json
+      CONCEPT2_LOG_LEVEL: ${CONCEPT2_LOG_LEVEL:-INFO}
+      CONCEPT2_INFLUX_URL: ${CONCEPT2_INFLUX_URL:-}
+      CONCEPT2_INFLUX_ORG: ${CONCEPT2_INFLUX_ORG:-}
+      CONCEPT2_INFLUX_BUCKET: ${CONCEPT2_INFLUX_BUCKET:-}
+      CONCEPT2_INFLUX_TOKEN: ${CONCEPT2_INFLUX_TOKEN:-}
+    volumes:
+      - concept2-state:/data
+
+
+volumes:
+  concept2-state:
