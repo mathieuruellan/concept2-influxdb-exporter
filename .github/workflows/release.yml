@@ -2,6 +2,13 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (push=false)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   release:
@@ -35,11 +42,12 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
         with:
           generate_release_notes: true
         env:
