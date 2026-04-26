@@ -48,7 +48,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
         with:
           generate_release_notes: true
