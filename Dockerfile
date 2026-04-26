@@ -45,7 +45,7 @@ WORKDIR /
 COPY --from=build /workdir/target/x86_64-unknown-linux-gnu/release/concept2-influxdb /concept2-influxdb
 
 USER 1000
-ENV RUST_LOG info
+ENV RUST_LOG=info
 
 EXPOSE 8000
 
