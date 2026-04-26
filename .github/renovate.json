@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "cargo": {
+    "groupName": "Rust dependencies"
+  },
+  "docker": {
+    "groupName": "Docker images",
+    "pinDigests": false
+  },
+  "schedule": ["before 5am on Monday"],
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 10
+}
