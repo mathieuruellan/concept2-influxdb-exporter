@@ -9,13 +9,13 @@ The exporter reads the following environment variables:
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `CONCEPT2_API_TOKEN` | Yes | - | API token from concept2.com |
-| `INFLUX_URL` | Yes* | - | InfluxDB URL (e.g., `http://localhost:8086`) |
-| `INFLUX_ORG` | Yes* | - | InfluxDB organization |
-| `INFLUX_BUCKET` | Yes* | - | InfluxDB bucket name |
-| `INFLUX_TOKEN` | Yes* | - | InfluxDB API token |
-| `POLL_INTERVAL_SECONDS` | No | `3600` | How often to sync in seconds. Value <= 0 means run once and exit. |
-| `STATE_FILE` | No | `/data/state.json` | Path to store sync state |
-| `LOG_LEVEL` | No | `INFO` | Log level (DEBUG, INFO, WARN, ERROR) |
+| `CONCEPT2_INFLUX_URL` | Yes* | - | InfluxDB URL (e.g., `http://localhost:8086`) |
+| `CONCEPT2_INFLUX_ORG` | Yes* | - | InfluxDB organization |
+| `CONCEPT2_INFLUX_BUCKET` | Yes* | - | InfluxDB bucket name |
+| `CONCEPT2_INFLUX_TOKEN` | Yes* | - | InfluxDB API token |
+| `CONCEPT2_POLL_INTERVAL_SECONDS` | No | `3600` | How often to sync in seconds. Value <= 0 means run once and exit. |
+| `CONCEPT2_STATE_FILE` | No | `/data/state.json` | Path to store sync state |
+| `CONCEPT2_LOG_LEVEL` | No | `INFO` | Log level (DEBUG, INFO, WARN, ERROR) |
 
 *Required if InfluxDB export is desired.
 
@@ -35,10 +35,10 @@ Or with Docker (see `Dockerfile`):
 docker build -t concept2-influxdb .
 docker run -d --name concept2-influxdb \
   -e CONCEPT2_API_TOKEN=xxx \
-  -e INFLUX_URL=http://influxdb:8086 \
-  -e INFLUX_ORG=myorg \
-  -e INFLUX_BUCKET=workouts \
-  -e INFLUX_TOKEN=xxx \
+  -e CONCEPT2_INFLUX_URL=http://influxdb:8086 \
+  -e CONCEPT2_INFLUX_ORG=myorg \
+  -e CONCEPT2_INFLUX_BUCKET=workouts \
+  -e CONCEPT2_INFLUX_TOKEN=xxx \
   concept2-influxdb
 ```
 
