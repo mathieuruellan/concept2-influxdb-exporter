@@ -1,6 +1,8 @@
-# syntax=docker/dockerfile:1.23
+# syntax=docker/dockerfile:1
 # Build stage
 FROM rust:latest AS build
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build tools for static linking.
 RUN apt-get update && apt-get install -y build-essential

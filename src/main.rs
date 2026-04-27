@@ -487,10 +487,12 @@ async fn polling_loop(config: Config, user_id: String, username: String) {
 // ============================================================================
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
+    eprintln!("DEBUG: Starting main()");
+    
     match dotenv::dotenv() {
-        Ok(_) => debug!("Loaded .env file"),
-        Err(e) => debug!("No .env file or error loading: {}", e),
+        Ok(_) => eprintln!("DEBUG: Loaded .env file"),
+        Err(e) => eprintln!("DEBUG: No .env file or error loading: {}", e),
     }
 
     let config = match Config::from_env() {
@@ -546,6 +548,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Authenticated as user_id={} username={}", user_id, username);
 
     polling_loop(config, user_id, username).await;
-
-    Ok(())
 }
