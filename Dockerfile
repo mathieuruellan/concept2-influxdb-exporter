@@ -20,12 +20,7 @@ WORKDIR /workdir
 COPY Cargo.toml ./
 
 # Create dummy main.rs to cache dependencies.
-RUN <<EOF
-    mkdir -p src
-    echo "fn main() {}" > src/main.rs
-    cargo build --release --target x86_64-unknown-linux-gnu
-    rm -rf src
-EOF
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release --target x86_64-unknown-linux-gnu && rm -rf src
 
 # Copy actual source code.
 COPY src ./src
