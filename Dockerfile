@@ -38,7 +38,10 @@ RUN file /workdir/target/x86_64-unknown-linux-gnu/release/concept2-influxdb
 
 # Runtime stage
 FROM scratch
-LABEL org.opencontainers.image.source="https://forgejo.breizhbiniou.fr/mathieu/concept2_influxdb" \
+
+ARG SOURCE_URL=https://forgejo.breizhbiniou.fr/mathieu/concept2_influxdb
+
+LABEL org.opencontainers.image.source="${SOURCE_URL}" \
      org.opencontainers.image.maintainer="Mathieu Ruellan <mathieu.ruellan@gmail.com>"
 
 WORKDIR /

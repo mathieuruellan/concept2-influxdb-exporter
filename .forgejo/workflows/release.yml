@@ -32,7 +32,7 @@ jobs:
         env:
           BUILDKIT_PROGRESS: "plain"
         run: |
-          docker build -t forgejo.breizhbiniou.fr/mathieu/concept2-influxdb:${{ env.VERSION }} .
+          docker build --build-arg SOURCE_URL=https://forgejo.breizhbiniou.fr/mathieu/concept2_influxdb -t forgejo.breizhbiniou.fr/mathieu/concept2-influxdb:${{ env.VERSION }} .
           docker push forgejo.breizhbiniou.fr/mathieu/concept2-influxdb:${{ env.VERSION }}
 
       - name: Create Forgejo Release with changelog

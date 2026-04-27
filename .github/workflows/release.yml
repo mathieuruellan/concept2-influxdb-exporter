@@ -47,6 +47,8 @@ jobs:
           push: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SOURCE_URL=https://github.com/mathieuruellan/concept2_influxdb_exporter
 
       - uses: softprops/action-gh-release@v3
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
