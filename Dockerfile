@@ -23,6 +23,8 @@ RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release -
 
 # Copy actual source code.
 COPY src ./src
+# Force Cargo to detect the source change (dummy build artifact has same mtime otherwise)
+RUN touch src/main.rs
 
 # Build the actual application.
 RUN cargo build --release --target=x86_64-unknown-linux-musl

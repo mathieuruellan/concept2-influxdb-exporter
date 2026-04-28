@@ -5,7 +5,7 @@ services:
       context: .
       args:
         SOURCE_URL: toto
-    restart: unless-stopped
+    restart: no
     environment:
       CONCEPT2_API_TOKEN: ${CONCEPT2_API_TOKEN}
       CONCEPT2_POLL_INTERVAL_SECONDS: ${CONCEPT2_POLL_INTERVAL_SECONDS:-3600}
