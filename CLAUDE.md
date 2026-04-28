@@ -49,6 +49,8 @@ A Rust CLI tool that fetches workout data from the Concept2 online API and expor
 
 ## Build & Run
 
+The cargo build can last 20 minutes.
+
 ```bash
 # Build
 cargo build --release

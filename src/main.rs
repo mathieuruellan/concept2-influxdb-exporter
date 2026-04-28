@@ -6,9 +6,16 @@ use log::{debug, error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::panic;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
+
+// Panic handler for better error reporting in Docker
+fn panic_handler(info: &panic::PanicHookInfo) {
+    eprintln!("PANIC: {}", info);
+    std::process::exit(1);
+}
 
 // ============================================================================
 // Configuration
@@ -149,13 +156,6 @@ impl Config {
             && self.influx_bucket.is_some()
             && self.influx_token.is_some()
     }
-}
-
-fn influxdb_client(config: &Config) -> Option<InfluxClient> {
-    let url = config.influx_url.as_ref()?;
-    let org = config.influx_org.as_ref()?;
-    let token = config.influx_token.as_ref()?;
-    Some(InfluxClient::new(url, org, token))
 }
 
 async fn write_to_influxdb(
@@ -450,24 +450,42 @@ async fn run_sync(
 }
 
 async fn polling_loop(config: Config, user_id: String, username: String) {
-    let (influx_client, influx_bucket) = config.influxdb_enabled().then(|| {
-        let client = influxdb_client(&config).expect("Failed to create InfluxDB client");
-        let bucket = config.influx_bucket.as_ref().unwrap().as_str();
-        (client, bucket)
-    }).unzip();
-
+    debug!("Entering polling_loop");
+    
+    // Get influx settings once
+    let influx_enabled = config.influxdb_enabled();
+    let influx_url = config.influx_url.clone();
+    let influx_org = config.influx_org.clone();
+    let influx_bucket = config.influx_bucket.clone();
+    let influx_token = config.influx_token.clone();
+    
+    debug!("InfluxDB configured: {}", influx_enabled);
+    debug!("poll_interval_seconds = {}", config.poll_interval_seconds);
+    
     if config.poll_interval_seconds <= 0 {
         info!("Running single sync and exiting");
-        if let Err(e) = run_sync(&config, &user_id, &username, influx_client.map(|c| (c, &**influx_bucket.as_ref().unwrap()))).await {
+        if let Err(e) = run_sync(&config, &user_id, &username, None).await {
             error!("Sync failed: {}", e);
             std::process::exit(1);
         }
+        debug!("Single sync completed, exiting with code 0");
         return;
     }
 
     loop {
-        let bucket_str = influx_bucket.as_ref().unwrap();
-        match run_sync(&config, &user_id, &username, influx_client.clone().map(|c| (c, &**bucket_str))).await {
+        // Create influx client for this iteration if configured
+        let influx_ref = if influx_enabled {
+            let client = InfluxClient::new(
+                influx_url.as_ref().unwrap(),
+                influx_org.as_ref().unwrap(),
+                influx_token.as_ref().unwrap()
+            );
+            Some((client, influx_bucket.as_ref().unwrap().as_str()))
+        } else {
+            None
+        };
+        
+        match run_sync(&config, &user_id, &username, influx_ref).await {
             Ok(_) => {}
             Err(e) => {
                 error!("Error during sync: {}", e);
@@ -488,13 +506,19 @@ async fn polling_loop(config: Config, user_id: String, username: String) {
 
 #[tokio::main]
 async fn main() {
-    eprintln!("DEBUG: Starting main()");
+    // Set panic handler for better error reporting
+    panic::set_hook(Box::new(panic_handler));
+    
+    // Force stderr output for Docker logs
+    debug!("Binary started at {}", Utc::now());
+    debug!("Attempting to load .env file...");
     
     match dotenv::dotenv() {
-        Ok(_) => eprintln!("DEBUG: Loaded .env file"),
-        Err(e) => eprintln!("DEBUG: No .env file or error loading: {}", e),
+        Ok(_) => debug!("Loaded .env file successfully"),
+        Err(e) => debug!("No .env file found or error: {}", e),
     }
 
+    debug!("Reading environment variables...");
     let config = match Config::from_env() {
         Ok(c) => c,
         Err(e) => {
@@ -503,6 +527,8 @@ async fn main() {
             std::process::exit(1);
         }
     };
+    
+    debug!("Config loaded successfully");
     env_logger::Builder::from_default_env()
         .filter_level(
             config
@@ -525,19 +551,7 @@ async fn main() {
     info!("  influx_bucket: {}", config.influx_bucket.as_deref().unwrap_or("not set"));
     info!("  influx_token: {}", if config.influx_token.is_some() { "***" } else { "not set" });
 
-    if config.influxdb_enabled() {
-        info!(
-            "Starting Concept2 exporter -> InfluxDB ({} poll every {}s)",
-            config.influx_url.as_ref().unwrap(),
-            config.poll_interval_seconds
-        );
-    } else {
-        info!(
-            "Starting Concept2 exporter (poll every {}s)",
-            config.poll_interval_seconds
-        );
-    }
-
+    debug!("Authenticating with Concept2 API...");
     let (user_id, username) = match fetch_user_id(&config).await {
         Ok((user_id, username)) => (user_id, username),
         Err(e) => {
@@ -547,5 +561,6 @@ async fn main() {
     };
     info!("Authenticated as user_id={} username={}", user_id, username);
 
+    debug!("Starting polling loop...");
     polling_loop(config, user_id, username).await;
 }
