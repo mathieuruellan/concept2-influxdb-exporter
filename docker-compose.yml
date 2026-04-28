@@ -1,7 +1,10 @@
 services:
 
   concept2-influxdb:
-    build: .
+    build: 
+      context: .
+      args:
+        SOURCE_URL: toto
     restart: unless-stopped
     environment:
       CONCEPT2_API_TOKEN: ${CONCEPT2_API_TOKEN}

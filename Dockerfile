@@ -1,17 +1,16 @@
 # syntax=docker/dockerfile:1
 # Build stage
-FROM rust:latest AS build
+FROM rust:alpine AS build
 
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build tools for static linking.
-RUN apt-get update && apt-get install -y build-essential
+RUN apk add --no-cache build-base musl-dev coreutils file musl-utils
 
-# Add default target for proc-macros.
-RUN rustup target add x86_64-unknown-linux-gnu
 
 # Force static linking of C runtime.
-ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-static -C relocation-model=static -C link-self-contained=yes"
+ENV CFLAGS="-static"
+ENV CXXFLAGS="-static"
 
 RUN USER=root cargo new --bin workdir
 WORKDIR /workdir
@@ -20,16 +19,22 @@ WORKDIR /workdir
 COPY Cargo.toml ./
 
 # Create dummy main.rs to cache dependencies.
-RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release --target x86_64-unknown-linux-gnu && rm -rf src
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs && cargo build --release --target=x86_64-unknown-linux-musl && rm -rf src
 
 # Copy actual source code.
 COPY src ./src
 
 # Build the actual application.
-RUN cargo build --release --target x86_64-unknown-linux-gnu
+RUN cargo build --release --target=x86_64-unknown-linux-musl
 
-RUN ldd /workdir/target/x86_64-unknown-linux-gnu/release/concept2-influxdb
-RUN file /workdir/target/x86_64-unknown-linux-gnu/release/concept2-influxdb
+# Verify static linking - check for no dynamic dependencies
+RUN apk add --no-cache binutils && \
+    if readelf -d /workdir/target/x86_64-unknown-linux-musl/release/concept2-influxdb 2>/dev/null | grep -q 'NEEDED'; then \
+        echo "Error: Binary has dynamic dependencies!"; false; \
+    else \
+        echo "Binary is statically linked (no NEEDED entries)"; \
+    fi
+RUN file /workdir/target/x86_64-unknown-linux-musl/release/concept2-influxdb
 
 # Runtime stage
 FROM scratch
@@ -42,9 +47,10 @@ LABEL org.opencontainers.image.source="${SOURCE_URL}" \
 WORKDIR /
 
 # Copy binary from builder.
-COPY --from=build /workdir/target/x86_64-unknown-linux-gnu/release/concept2-influxdb /concept2-influxdb
+COPY --from=build /workdir/target/x86_64-unknown-linux-musl/release/concept2-influxdb /concept2-influxdb
 
 USER 1000
+
 ENV RUST_LOG=info
 
 EXPOSE 8000
