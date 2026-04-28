@@ -4,7 +4,7 @@ FROM rust:alpine AS build
 
 
 # Install build tools for static linking.
-RUN apk add --no-cache build-base musl-dev coreutils file musl-utils
+RUN apk add --no-cache build-base musl-dev coreutils file musl-utils ca-certificates
 
 
 # Force static linking of C runtime.
@@ -50,6 +50,10 @@ WORKDIR /
 
 # Copy binary from builder.
 COPY --from=build /workdir/target/x86_64-unknown-linux-musl/release/concept2-influxdb /concept2-influxdb
+
+# Copy CA certificates for TLS verification in scratch image.
+COPY --from=build /etc/ssl/cert.pem /etc/ssl/cert.pem
+ENV SSL_CERT_FILE=/etc/ssl/cert.pem
 
 USER 1000
 
