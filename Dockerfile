@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build stage
-FROM rust:alpine AS build
+FROM rust:alpine3.22 AS build
 
 
 # Install build tools for static linking.
