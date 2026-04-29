@@ -71,6 +71,8 @@ struct WorkoutMetrics {
     calories: f64,
     spm: f64,
     hr: f64,
+    rest_distance: f64,
+    rest_time: f64,
     timestamp: f64,
 }
 
@@ -111,6 +113,8 @@ struct WorkoutResult {
     calories: Option<f64>,
     stroke_rate: Option<f64>,
     heart_rate: Option<HeartRateData>,
+    rest_distance: Option<f64>,
+    rest_time: Option<i64>,
     updated_at: Option<String>,
 }
 
@@ -177,6 +181,8 @@ async fn write_to_influxdb(
         .field("calories", workout.calories)
         .field("stroke_rate_avg", workout.spm)
         .field("heart_rate_avg", workout.hr)
+        .field("rest_distance", workout.rest_distance)
+        .field("rest_time", workout.rest_time)
         .timestamp(timestamp_ns)
         .build()?;
 
@@ -346,6 +352,8 @@ fn workout_to_metrics(workout: &WorkoutResult, username: &str) -> WorkoutMetrics
         .as_ref()
         .and_then(|hr| hr.average)
         .unwrap_or(0.0) as i64;
+    let rest_distance = (workout.rest_distance.unwrap_or(0.0) as i64).max(0);
+    let rest_time = workout.rest_time.unwrap_or(0).max(0);
     let ts = parse_timestamp(
         workout
             .date_utc
@@ -364,6 +372,8 @@ fn workout_to_metrics(workout: &WorkoutResult, username: &str) -> WorkoutMetrics
         calories: calories as f64,
         spm: spm as f64,
         hr: hr as f64,
+        rest_distance: rest_distance as f64,
+        rest_time: rest_time as f64 / 10.0,
         timestamp: ts as f64,
     }
 }
