@@ -13,7 +13,6 @@ The exporter reads the following environment variables:
 | `CONCEPT2_INFLUX_ORG` | Yes* | - | InfluxDB organization |
 | `CONCEPT2_INFLUX_BUCKET` | Yes* | - | InfluxDB bucket name |
 | `CONCEPT2_INFLUX_TOKEN` | Yes* | - | InfluxDB API token |
-| `CONCEPT2_POLL_INTERVAL_SECONDS` | No | `3600` | How often to sync in seconds. Value <= 0 means run once and exit. |
 | `CONCEPT2_STATE_FILE` | No | `/data/state.json` | Path to store sync state |
 | `CONCEPT2_LOG_LEVEL` | No | `INFO` | Log level (DEBUG, INFO, WARN, ERROR) |
 

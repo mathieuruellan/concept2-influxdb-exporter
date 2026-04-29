@@ -41,7 +41,6 @@ A Rust CLI tool that fetches workout data from the Concept2 online API and expor
 | `INFLUX_ORG` | Yes* | - | InfluxDB organization |
 | `INFLUX_BUCKET` | Yes* | - | InfluxDB bucket name |
 | `INFLUX_TOKEN` | Yes* | - | InfluxDB API token |
-| `POLL_INTERVAL_SECONDS` | No | `3600` | How often to sync (in seconds) |
 | `STATE_FILE` | No | `/data/state.json` | Path to store sync state |
 | `LOG_LEVEL` | No | `INFO` | Log level (DEBUG, INFO, WARN, ERROR) |
 

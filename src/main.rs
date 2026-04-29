@@ -9,7 +9,6 @@ use std::fs;
 use std::panic;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::time::sleep;
 
 // Panic handler for better error reporting in Docker
 fn panic_handler(info: &panic::PanicHookInfo) {
@@ -25,7 +24,6 @@ fn panic_handler(info: &panic::PanicHookInfo) {
 struct Config {
     concept2_api_base: String,
     api_token: String,
-    poll_interval_seconds: i64,
     state_file: PathBuf,
     log_level: String,
     influx_url: Option<String>,
@@ -43,9 +41,6 @@ impl Config {
         Ok(Config {
             concept2_api_base: "https://log.concept2.com/api".to_string(),
             api_token: std::env::var("CONCEPT2_API_TOKEN")?,
-            poll_interval_seconds: std::env::var("CONCEPT2_POLL_INTERVAL_SECONDS")
-                .unwrap_or_else(|_| "3600".to_string())
-                .parse::<i64>()?,
             state_file,
             log_level: std::env::var("CONCEPT2_LOG_LEVEL").unwrap_or_else(|_| "INFO".to_string()),
             influx_url: std::env::var("CONCEPT2_INFLUX_URL").ok(),
@@ -407,8 +402,7 @@ async fn sync_once(
         };
 
         if let Err(e) = write_result {
-            error!("Failed to write workout {} to InfluxDB: {}", wid, e);
-            continue;
+            return Err(format!("Failed to write workout {} to InfluxDB: {}", wid, e).into());
         }
 
         new_count += 1;
@@ -449,54 +443,22 @@ async fn run_sync(
     Ok(())
 }
 
-async fn polling_loop(config: Config, user_id: String, username: String) {
-    debug!("Entering polling_loop");
-    
-    // Get influx settings once
+async fn run_once(config: Config, user_id: String, username: String) {
     let influx_enabled = config.influxdb_enabled();
-    let influx_url = config.influx_url.clone();
-    let influx_org = config.influx_org.clone();
-    let influx_bucket = config.influx_bucket.clone();
-    let influx_token = config.influx_token.clone();
-    
-    debug!("InfluxDB configured: {}", influx_enabled);
-    debug!("poll_interval_seconds = {}", config.poll_interval_seconds);
-    
-    if config.poll_interval_seconds <= 0 {
-        info!("Running single sync and exiting");
-        if let Err(e) = run_sync(&config, &user_id, &username, None).await {
-            error!("Sync failed: {}", e);
-            std::process::exit(1);
-        }
-        debug!("Single sync completed, exiting with code 0");
-        return;
-    }
-
-    loop {
-        // Create influx client for this iteration if configured
-        let influx_ref = if influx_enabled {
-            let client = InfluxClient::new(
-                influx_url.as_ref().unwrap(),
-                influx_org.as_ref().unwrap(),
-                influx_token.as_ref().unwrap()
-            );
-            Some((client, influx_bucket.as_ref().unwrap().as_str()))
-        } else {
-            None
-        };
-        
-        match run_sync(&config, &user_id, &username, influx_ref).await {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Error during sync: {}", e);
-            }
-        }
-
-        info!(
-            "Sleeping {}s until next sync",
-            config.poll_interval_seconds
+    let influx_ref = if influx_enabled {
+        let client = InfluxClient::new(
+            config.influx_url.as_ref().unwrap(),
+            config.influx_org.as_ref().unwrap(),
+            config.influx_token.as_ref().unwrap(),
         );
-        sleep(Duration::from_secs(config.poll_interval_seconds as u64)).await;
+        Some((client, config.influx_bucket.as_ref().unwrap().as_str()))
+    } else {
+        None
+    };
+
+    if let Err(e) = run_sync(&config, &user_id, &username, influx_ref).await {
+        eprintln!("Sync failed: {}", e);
+        std::process::exit(1);
     }
 }
 
@@ -543,7 +505,6 @@ async fn main() {
 
     info!("Configuration:");
     info!("  concept2_api_base: {}", config.concept2_api_base);
-    info!("  poll_interval_seconds: {}", config.poll_interval_seconds);
     info!("  state_file: {}", config.state_file.display());
     info!("  log_level: {}", config.log_level);
     info!("  influx_url: {}", config.influx_url.as_deref().unwrap_or("not set"));
@@ -561,6 +522,6 @@ async fn main() {
     };
     info!("Authenticated as user_id={} username={}", user_id, username);
 
-    debug!("Starting polling loop...");
-    polling_loop(config, user_id, username).await;
+    debug!("Starting sync...");
+    run_once(config, user_id, username).await;
 }
