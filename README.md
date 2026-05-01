@@ -46,8 +46,9 @@ docker run -d --name concept2-influxdb \
 Workouts are written to InfluxDB with these fields:
 
 - **Tags**: `workout_id`, `username`, `machine_type`, `workout_type`, `date`
-- **Fields**: `distance_meters`, `duration_seconds`, `calories`, `stroke_rate_avg`, `heart_rate_avg`
+- **Fields**: `distance_meters`, `duration_seconds`, `calories`, `stroke_rate_avg`, `heart_rate_avg`, `rest_distance`, `rest_time`
 
 ## Grafana Integration
 
-![Grafana Dashboard](./grafana.png)
+![Grafana Dashboard](./grafana1.png)
+![Grafana Dashboard](./grafana2.png)
