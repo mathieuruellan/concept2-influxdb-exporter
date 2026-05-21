@@ -1,9 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "cargo": {
-    "groupName": "Rust dependencies"
-  },
+  "ignoreDeps": ["reqwest"],
   "prHourlyLimit": 4,
   "prConcurrentLimit": 10,
   "packageRules": [
