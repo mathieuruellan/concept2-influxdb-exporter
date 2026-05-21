@@ -4,7 +4,6 @@
   "cargo": {
     "groupName": "Rust dependencies"
   },
-  "schedule": ["before 5am on Monday"],
   "prHourlyLimit": 4,
   "prConcurrentLimit": 10,
   "packageRules": [
