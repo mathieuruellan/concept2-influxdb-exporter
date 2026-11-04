@@ -1,4 +1,4 @@
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, TimeDelta, TimeZone, Utc};
 use futures::stream;
 use influxdb2::Client as InfluxClient;
 use influxdb2::models::DataPoint;
@@ -115,6 +115,7 @@ struct WorkoutResult {
     heart_rate: Option<HeartRateData>,
     rest_distance: Option<f64>,
     rest_time: Option<i64>,
+    #[allow(dead_code)]
     updated_at: Option<String>,
 }
 
@@ -382,6 +383,18 @@ fn workout_to_metrics(workout: &WorkoutResult, username: &str) -> WorkoutMetrics
 // Polling Loop
 // ============================================================================
 
+/// Safety overlap used when computing the incremental sync watermark.
+///
+/// The Concept2 API filters `updated_after` on the workout's *update* timestamp,
+/// while the previous implementation persisted a *workout date* (local time, no
+/// timezone). That mismatch made the watermark ~1h ahead of the real boundary
+/// and silently skipped workouts uploaded shortly after the last synced one.
+///
+/// The state now stores `now - OVERLAP` at the end of each successful sync, so
+/// every run re-fetches a safe window of recently updated workouts. Writes are
+/// idempotent (same measurement/tags/timestamp), so the overlap is harmless.
+const SYNC_OVERLAP: TimeDelta = TimeDelta::hours(24);
+
 async fn sync_once(
     config: &Config,
     user_id: &str,
@@ -399,7 +412,6 @@ async fn sync_once(
     info!("Fetched {} workout(s)", workouts.len());
 
     let mut new_count = 0;
-    let mut newest_date = state.last_synced_at;
 
     for workout in workouts {
         let wid = workout.id.to_string();
@@ -416,23 +428,17 @@ async fn sync_once(
         }
 
         new_count += 1;
-
-        let w_date = workout
-            .updated_at
-            .as_ref()
-            .or(workout.date.as_ref())
-            .cloned();
-        if let Some(w_date_str) = w_date {
-            if newest_date.is_none() || w_date_str > newest_date.as_ref().unwrap().clone() {
-                newest_date = Some(w_date_str);
-            }
-        }
     }
 
     info!("Recorded {} new workout(s)", new_count);
 
+    // The Concept2 API filters `updated_after` on the update timestamp, not on
+    // the workout date. Persist a wall-clock watermark (with a safety overlap)
+    // so late/backdated uploads are never skipped.
+    let watermark = Utc::now() - SYNC_OVERLAP;
+
     Ok(SyncState {
-        last_synced_at: newest_date,
+        last_synced_at: Some(watermark.format("%Y-%m-%d %H:%M:%S").to_string()),
     })
 }
 
